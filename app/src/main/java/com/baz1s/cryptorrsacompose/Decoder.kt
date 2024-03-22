@@ -47,6 +47,20 @@ class Decoder : Cryptor() {
         this.convert()
     }
 
+    override fun setMessage(message: String, keyString: String) {
+        var keyList = ArrayList<String>()
+
+        for (i in 0..<message.length){
+            messageInitial.add(message[i])
+        }
+
+        for (i in 0..<5){ keyList.add(keyString.split(" ")[i]) }
+
+        this.initializeParameters(keyList[0].toInt(), keyList[1].toInt(), keyList[2].toInt(), keyList[3].toInt(), keyList[4])
+        this.cryption()
+        this.convert()
+    }
+
     override fun getFinalMessage(): String {
         return this.messageConverted
     }

@@ -6,9 +6,9 @@ import java.nio.file.Paths
 abstract class Cryptor {
     protected abstract var PRS: RSAkeygen
     protected abstract var messageInitial: ArrayList<Char> //Original message
-    protected var alphabetRussian: Array<Char> = arrayOf(' ', 'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я')
-    protected var alphabetEnglish: Array<Char> = arrayOf(' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
-    protected lateinit var alphabet: Array<Char>
+    private var alphabetRussian: Array<Char> = arrayOf(' ', 'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я')
+    private var alphabetEnglish: Array<Char> = arrayOf(' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+    private lateinit var alphabet: Array<Char>
     protected abstract var lettersDictionary: ArrayList<CoupleString>
     protected abstract var convert: BinaryConvert
     protected abstract var messageConverted: String //Message converted to binary state
@@ -119,7 +119,7 @@ abstract class Cryptor {
         this.cryption()
     }
 
-    public fun setMessage(message: String, keyString: String){
+    public open fun setMessage(message: String, keyString: String){
         var keyList = ArrayList<String>()
 
         for (i in 0..<message.length){
