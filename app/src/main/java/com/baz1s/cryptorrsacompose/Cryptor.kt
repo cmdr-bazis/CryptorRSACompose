@@ -56,7 +56,6 @@ abstract class Cryptor {
     protected fun initializeParameters(numP: Int, numQ: Int, numE: Int, firstNumber: Int, language: String){
         var binaryValueOut = ""
         var binaryValueTemp = ""
-        var languageString: String = ""
 
         when (language){ //Defining of what language will be used for message
             "RU" -> this.alphabet = this.alphabetRussian
@@ -100,25 +99,6 @@ abstract class Cryptor {
         println()
     }
 
-    public open fun menu(){
-        var stringPath = ""
-        var key = ""
-        var keyList = ArrayList<String>()
-
-        println("Введите путь к сообщению: ")
-        stringPath = readln()
-
-        println("Введите ключ (четыре числа через пробел): ")
-        key = readln()
-
-        for (i in 0..<5){ keyList.add(key.split(" ")[i]) }
-
-        this.inputMessage(stringPath)
-        this.initializeParameters(keyList[0].toInt(), keyList[1].toInt(), keyList[2].toInt(), keyList[3].toInt(), keyList[4])
-        this.convert()
-        this.cryption()
-    }
-
     public open fun setMessage(message: String, keyString: String){
         var keyList = ArrayList<String>()
 
@@ -143,5 +123,10 @@ abstract class Cryptor {
 
     public fun getGamma(): String {
         return this.PRS.getPRS()
+    }
+
+    public fun keyCheck(keyString: String): Boolean {
+        if (keyString.split(" ").size == 5) return true
+        else return false
     }
 }
