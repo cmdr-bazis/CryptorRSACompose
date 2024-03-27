@@ -1,38 +1,26 @@
 package com.baz1s.cryptorrsacompose
 
+import kotlin.math.pow
+
 class BinaryConvert {
-    public fun pow(number: Long, pow: Int): Long {
-        var _number: Long = number
-        if (pow == 0){
-            _number = 1
-        }
-        else{
-            for (i in 0..<pow - 1){
-                _number *= number
-            }
-        }
 
-        return _number
-    }
+    private fun convertToTen(numberBase: Int, number: Int): Int {
+        var finalSumm = 0
 
-    private fun convertToTen(numberBase: Long, number: Long): Long {
-        var finalSumm: Long = 0
-        var tempIndex = 0
-        var tempPow = 0
         for (i in 0..<number.toString().length) {
-            finalSumm += number.toString()[i].digitToInt() * pow(numberBase, number.toString().length - 1 - i)
+            finalSumm += (number.toString()[i].digitToInt() * numberBase.toDouble().pow(number.toString().length - 1 - i)).toInt()
         }
         return finalSumm
     }
 
-    private fun convertToAny(number: Long, finalNumberBase: Long): String {
+    private fun convertToAny(number: Int, finalNumberBase: Int): String {
         var _number = number
         var tempInt = 0
         var numberStringOut = ""
         var numberArrayList = ArrayList<Int>()
 
-        while (_number.toInt() != 0){
-            numberArrayList.add((_number % finalNumberBase).toInt())
+        while (_number != 0){
+            numberArrayList.add((_number % finalNumberBase))
             _number /= finalNumberBase
         }
 
@@ -49,9 +37,9 @@ class BinaryConvert {
         return numberStringOut
     }
 
-    public fun convert(numberBase: Long, number: Long, finalNumberBase: Long): String {
-        var tempInt: Long = 0
-        if (numberBase.toInt() == 10){
+    public fun convert(numberBase: Int, number: Int, finalNumberBase: Int): String {
+        var tempInt: Int = 0
+        if (numberBase == 10){
             return convertToAny(number, finalNumberBase)
         }
         else {

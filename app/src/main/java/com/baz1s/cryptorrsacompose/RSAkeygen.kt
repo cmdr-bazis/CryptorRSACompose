@@ -1,10 +1,12 @@
 package com.baz1s.cryptorrsacompose
 
+import java.math.BigInteger
 import kotlin.math.abs
 
 class RSAkeygen {
     private var numP = 2735
     private var numQ = 6235
+    private var numN = BigInteger.valueOf(0)
     private var numE = 7
     private var convert = BinaryConvert()
     private var PRSFinalOut: String = ""
@@ -24,26 +26,30 @@ class RSAkeygen {
         this.range = range
     }
 
-    public fun createNextNumber(){
-        var index = 0
-        var nextNumber: Long = firstNumber.toLong()
-        var stringOut = ""
-        var charCord = ' '
-        var tempStringConvert = ""
-        for (i in 0..<range){
-            nextNumber = abs(convert.pow(nextNumber, this.numE) % (numP * numQ))
-            tempStringConvert = convert.convert(10, nextNumber, 2)
+    constructor(numN: BigInteger, numE: Int, firstNumber: Int, range: Int){
+        this.numN = numN
+        this.numE = numE
+        this.firstNumber = firstNumber
+        this.range = range
+    }
 
-            try {
-                charCord = tempStringConvert[tempStringConvert.length - 1]
+    public fun setPRS(){
+        var nextNumber: Long = firstNumber.toLong()
+        var nextNumberBigInt = BigInteger.valueOf(firstNumber.toLong())
+        var stringOut = ""
+        var tempNextNumberBigIntString = ""
+
+        for (i in 0..<range){
+//            nextNumber = abs(convert.pow(nextNumber, this.numE) % (numN))
+            nextNumberBigInt = (nextNumberBigInt.pow(this.numE) % numN).abs()
+
+            tempNextNumberBigIntString = nextNumberBigInt.toString()
+
+            if (tempNextNumberBigIntString[tempNextNumberBigIntString.length - 1].toInt() % 2 == 0){
+                stringOut += "0"
             }
-            catch (e: StringIndexOutOfBoundsException){
-                print("ERROR (Symbols amount: $index) ")
-                break
-            }
-            finally {
-                stringOut += charCord
-                index += 1
+            else{
+                stringOut += "1"
             }
         }
         this.PRSFinalOut = stringOut
@@ -72,7 +78,7 @@ class RSAkeygen {
         }
 
         for (i in 4..1023){
-            nGramList.add(Couple(convert.convert(10, i.toLong(), 2), 0))
+            nGramList.add(Couple(convert.convert(10, i, 2), 0))
         }
 
         for (i in 0..<nGramList.size){

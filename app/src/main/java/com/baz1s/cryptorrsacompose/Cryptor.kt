@@ -2,6 +2,7 @@ package com.baz1s.cryptorrsacompose
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.math.BigInteger
 
 abstract class Cryptor {
     protected abstract var PRS: RSAkeygen
@@ -49,11 +50,11 @@ abstract class Cryptor {
 
     protected fun setLetterBinarySize(){
         for (i in alphabet.indices){
-            letterBinarySize = convert.convert(10, i.toLong(), 2).length
+            letterBinarySize = convert.convert(10, i, 2).length
         }
     }
 
-    protected fun initializeParameters(numP: Int, numQ: Int, numE: Int, firstNumber: Int, language: String){
+    protected fun initializeParameters(numN: BigInteger, numE: Int, firstNumber: Int, language: String){
         var binaryValueOut = ""
         var binaryValueTemp = ""
 
@@ -63,11 +64,11 @@ abstract class Cryptor {
         }
 
         this.setLetterBinarySize()
-        PRS = RSAkeygen(numP, numQ, numE, firstNumber, this.messageInitial.size * letterBinarySize)
-        PRS.createNextNumber()
+        PRS = RSAkeygen(numN, numE, firstNumber, this.messageInitial.size * letterBinarySize)
+        PRS.setPRS()
 
         for (i in alphabet.indices){
-            binaryValueTemp = convert.convert(10, i.toLong(), 2)
+            binaryValueTemp = convert.convert(10, i, 2)
             binaryValueOut = this.fillLeft(binaryValueTemp, letterBinarySize)
             lettersDictionary.add(CoupleString(alphabet[i], binaryValueOut))
         }
@@ -106,9 +107,9 @@ abstract class Cryptor {
             messageInitial.add(message[i])
         }
 
-        for (i in 0..<5){ keyList.add(keyString.split(" ")[i]) }
+        for (i in 0..<4){ keyList.add(keyString.split(" ")[i]) }
 
-        this.initializeParameters(keyList[0].toInt(), keyList[1].toInt(), keyList[2].toInt(), keyList[3].toInt(), keyList[4])
+        this.initializeParameters(keyList[0].toBigInteger(), keyList[1].toInt(), keyList[2].toInt(), keyList[3])
         this.convert()
         this.cryption()
     }
@@ -126,7 +127,7 @@ abstract class Cryptor {
     }
 
     public fun keyCheck(keyString: String): Boolean {
-        if (keyString.split(" ").size == 5) return true
+        if (keyString.split(" ").size == 4) return true
         else return false
     }
 }

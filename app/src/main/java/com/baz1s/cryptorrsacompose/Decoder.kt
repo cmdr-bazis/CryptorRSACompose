@@ -36,9 +36,9 @@ class Decoder : Cryptor() {
             messageInitial.add(message[i])
         }
 
-        for (i in 0..<5){ keyList.add(keyString.split(" ")[i]) }
+        for (i in 0..<4){ keyList.add(keyString.split(" ")[i]) }
 
-        this.initializeParameters(keyList[0].toInt(), keyList[1].toInt(), keyList[2].toInt(), keyList[3].toInt(), keyList[4])
+        this.initializeParameters(keyList[0].toBigInteger(), keyList[1].toInt(), keyList[2].toInt(), keyList[3])
         this.cryption()
         this.convert()
     }
