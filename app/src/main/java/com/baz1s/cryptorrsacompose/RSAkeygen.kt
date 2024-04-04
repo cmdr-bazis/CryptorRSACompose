@@ -34,14 +34,13 @@ class RSAkeygen {
     }
 
     public fun setPRS(){
-        var nextNumber: Long = firstNumber.toLong()
         var nextNumberBigInt = BigInteger.valueOf(firstNumber.toLong())
         var stringOut = ""
         var tempNextNumberBigIntString = ""
 
         for (i in 0..<range){
 //            nextNumber = abs(convert.pow(nextNumber, this.numE) % (numN))
-            nextNumberBigInt = (nextNumberBigInt.pow(this.numE) % numN).abs()
+            nextNumberBigInt = (nextNumberBigInt.pow(this.numE) % numN)
 
             tempNextNumberBigIntString = nextNumberBigInt.toString()
 
