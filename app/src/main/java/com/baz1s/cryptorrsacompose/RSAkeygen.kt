@@ -10,7 +10,7 @@ class RSAkeygen {
     private var numE = 7
     private var convert = BinaryConvert()
     private var PRSFinalOut: String = ""
-    private var firstNumber = 10
+    private var firstNumber = 12
     private var range = 1500
 
     constructor(numP: Int, numQ: Int, numE: Int, firstNumber: Int, range: Int){
@@ -39,7 +39,6 @@ class RSAkeygen {
         var tempNextNumberBigIntString = ""
 
         for (i in 0..<range){
-//            nextNumber = abs(convert.pow(nextNumber, this.numE) % (numN))
             nextNumberBigInt = (nextNumberBigInt.pow(this.numE) % numN)
 
             tempNextNumberBigIntString = nextNumberBigInt.toString()
@@ -52,6 +51,10 @@ class RSAkeygen {
             }
         }
         this.PRSFinalOut = stringOut
+    }
+
+    public fun createKey(){
+
     }
 
     public fun getPRS(): String {

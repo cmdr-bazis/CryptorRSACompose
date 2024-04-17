@@ -18,11 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.List
 import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -40,29 +36,50 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.core.net.toUri
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.InputStream
-import android.Manifest
-import android.content.Context
-import androidx.core.content.ContextCompat
+import android.util.Log
+import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent{
-            permissionRequest(Manifest.permission.READ_EXTERNAL_STORAGE)
             CryptorPreview()
         }
     }
 
-    private fun permissionRequest(permission: String){
-        val requestPermissionLauncher  = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean -> }
-
-        requestPermissionLauncher.launch(permission)
-    }
+//    @Preview
+//    @OptIn(ExperimentalPermissionsApi::class)
+//    @Composable
+//    private fun RequestPermission(){
+//        val readPermissionState = rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+//        val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//
+//
+//        if (readPermissionState.status.isGranted && writePermissionState.status.isGranted){
+//            Text(text = "Permissions granted")
+//        }
+//        else{
+//            val textToShow = if (readPermissionState.status.shouldShowRationale && writePermissionState.status.shouldShowRationale){
+//                "Read and write permission are used for read files to encode/decode and write crypted files"
+//            } else {
+//                "Permissions denied"
+//            }
+//
+//            Text(text = textToShow)
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Button(onClick = {
+////                readPermissionState.launchPermissionRequest()
+////                writePermissionState.launchPermissionRequest()
+//            }){
+//                Text(text = "Grant permission")
+//            }
+//
+//        }
+//    }
 
 
     private fun convertToPath(uriPath: String): String {
@@ -71,11 +88,13 @@ class MainActivity : ComponentActivity() {
         return path
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Preview
     @Composable
     fun CryptorPreview() {
         val paddingValue = 20.dp
+        val elementPaddingValue = 2.dp
         val fontSize = 5.em
         val textFieldHeight = 70.dp
 
@@ -89,7 +108,7 @@ class MainActivity : ComponentActivity() {
         val isEncoderSwitch = remember { mutableStateOf(true) }
         val switchText = remember { mutableStateOf("Encoder") }
 
-        val coroutineScope = rememberCoroutineScope()
+        val snackbarCoroutineScope = rememberCoroutineScope()
         val snackbarHostState = remember { mutableStateOf(SnackbarHostState()) }
 
         var messageToCryptSave = ""
@@ -99,25 +118,48 @@ class MainActivity : ComponentActivity() {
         val decoder = Decoder()
         val encoder = Encoder()
 
+//        val readPermissionState = rememberPermissionState(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+//        val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
         var showFilePicker by remember { mutableStateOf(false) } // for FilePicker MPFile Library
+
+        val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {isGranted: Boolean ->
+            if (isGranted){
+                Log.d("Permission", "Granted")
+            }
+            else{
+                Log.d("Permission", "Denied")
+            }
+        }
 
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "*/*"
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         val result = remember { mutableStateOf("") }
-        val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()) { uri ->
+        val fileChooserLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { uri ->
             if (uri != null) {
-                result.value = uri.path?.toUri().toString()
-                pathToMessage.value = convertToPath(result.value)
-
-                val inputStream: InputStream = File(convertToPath(result.value)).inputStream()
-                val lineList = ArrayList<String>()
-
-                inputStream.bufferedReader().forEachLine { lineList.add(it) }
-                val finalMessageToCrypt = lineList.toString()
-
-                messageToCryptTextField.value = finalMessageToCrypt
+//                result.value = uri.path?.toUri().toString()
+//                pathToMessage.value = convertToPath(result.value)
+//
+//                val inputStream: InputStream = File(convertToPath(result.value)).inputStream()
+//                val lineList = ArrayList<String>()
+//
+//                inputStream.bufferedReader().forEachLine { lineList.add(it) }
+//                val finalMessageToCrypt = lineList.toString()
+//
+//                messageToCryptTextField.value = finalMessageToCrypt
+                pathToMessage.value = uri.data.toString()
             }
+        }
+
+        val encoderThread = Thread {
+            encoder.setMessage(messageToCryptSave, keySave)
+            messageCryptedTextField.value = encoder.getFinalMessage()
+        }
+
+        val decoderThread = Thread {
+            decoder.setMessage(messageToCryptSave, keySave)
+            messageCryptedTextField.value = decoder.getFinalMessage()
         }
 
         Column(
@@ -148,34 +190,39 @@ class MainActivity : ComponentActivity() {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween){
-                    Box(
-                        modifier = Modifier.width(260.dp),
-                    ){
-                        OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            value = messageToCryptTextField.value,
-                            onValueChange = { newText -> messageToCryptTextField.value = newText},
-                            placeholder = { Text(text = "Write your message here")}
-                        )
-                    }
-                    FloatingActionButton(
-                        onClick = {
-                            launcher.launch(arrayOf("pdf", "txt", "text", "text/plain"))
-                        }) {
-                        Icon(Icons.Rounded.List, "")
-                    }
-                }
-
-                Row(){
                     OutlinedTextField(
                         modifier = Modifier
-                            .fillMaxWidth(),
-                        value = pathToMessage.value,
-                        onValueChange = { newText -> pathToMessage.value = newText},
-                        placeholder = { Text(text = "path")}
+                            .fillMaxWidth()
+                            .padding(elementPaddingValue),
+                        value = messageToCryptTextField.value,
+                        onValueChange = { newText -> messageToCryptTextField.value = newText},
+                        placeholder = { Text(text = "Write your message here")}
                     )
+//                    Button(onClick = {
+//                        permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+////                        readPermissionState.launchPermissionRequest()
+//                    }) {
+//                        Text("R")
+//                    }
+//                    FloatingActionButton(
+//                        onClick = {
+////                            readPermissionState.launchPermissionRequest()
+////                            fileChooserLauncher.launch(arrayOf("pdf", "txt", "text", "text/plain"))
+//                            fileChooserLauncher.launch(intent)
+//                        }) {
+//                        Icon(Icons.Rounded.List, "")
+//                    }
                 }
+
+//                Row(){
+//                    OutlinedTextField(
+//                        modifier = Modifier
+//                            .fillMaxWidth(),
+//                        value = pathToMessage.value,
+//                        onValueChange = { newText -> pathToMessage.value = newText},
+//                        placeholder = { Text(text = "path")}
+//                    )
+//                }
 
                 Spacer(modifier = Modifier.weight(1f))
                 SnackbarHost(hostState = snackbarHostState.value)
@@ -186,7 +233,9 @@ class MainActivity : ComponentActivity() {
                     verticalAlignment = Alignment.Bottom
                 )
                 {
-                    Box(modifier = Modifier.width(150.dp)) {
+                    Box(modifier = Modifier
+                        .width(150.dp)
+                        .padding(elementPaddingValue)) {
                         OutlinedTextField(
                             value = keyTextField.value,
                             onValueChange = {newText -> keyTextField.value = newText},
@@ -196,7 +245,7 @@ class MainActivity : ComponentActivity() {
                     Button(
                         modifier = Modifier.height(50.dp),
                         onClick = {
-                            coroutineScope.launch {
+                            snackbarCoroutineScope.launch {
                                 if (!encoder.keyCheck(keyTextField.value)){
                                     snackbarHostState.value.showSnackbar("Wrong key type, try again")
                                     isParametersFilled = false
@@ -224,7 +273,8 @@ class MainActivity : ComponentActivity() {
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(textFieldHeight),
+                        .height(150.dp)
+                        .padding(elementPaddingValue),
                     value = messageCryptedTextField.value,
                     onValueChange = {newText -> messageCryptedTextField.value = newText},
                     placeholder = { Text(text = "Crypted message here") }
@@ -232,51 +282,37 @@ class MainActivity : ComponentActivity() {
                 OutlinedTextField(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(textFieldHeight),
-                    value = messageConverted.value,
-                    onValueChange = {newText -> messageConverted.value = newText},
-                    placeholder = { Text(text = "Converted message") }
-                )
-                OutlinedTextField(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(textFieldHeight),
+                        .height(150.dp)
+                        .padding(elementPaddingValue),
                     value = PRS.value,
                     onValueChange = {newText -> PRS.value = newText},
                     placeholder = { Text(text = "PRS") }
                 )
                 Row(modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End) {
-                    Box(){
-                        Button(
-                            modifier = Modifier.height(50.dp),
-                            onClick = {
-                                coroutineScope.launch {
+                    horizontalArrangement = Arrangement.SpaceBetween) {
+                    Button(
+                        modifier = Modifier.height(50.dp),
+                        onClick = {
+
+                        }) {
+                        Text(text = "Auto Generate")
+                    }
+                    Button(
+                        modifier = Modifier.height(50.dp),
+                        onClick = {
+                            snackbarCoroutineScope.launch {
                                 if (isParametersFilled){
                                     if (isEncoderSwitch.value) {
-//                                        try { encoder.setMessage(messageToCryptSave, keySave) }
-//                                        catch (e: IndexOutOfBoundsException){ snackbarHostState.value.showSnackbar("Cryption failed") }
-                                        encoder.setMessage(messageToCryptSave, keySave)
-                                        messageCryptedTextField.value = encoder.getFinalMessage()
-
-                                        messageConverted.value = encoder.getConvertedMessage()
-                                        PRS.value = encoder.getGamma()
+                                        encoderThread.start()
                                     }
                                     else{
-//                                        try { decoder.setMessage(messageToCryptSave, keySave) }
-//                                        catch (e: IndexOutOfBoundsException){ snackbarHostState.value.showSnackbar("Cryption failed") }
-                                        decoder.setMessage(messageToCryptSave, keySave)
-                                        messageCryptedTextField.value = decoder.getFinalMessage()
-
-                                        messageConverted.value = decoder.getConvertedMessage()
-                                        PRS.value = decoder.getGamma()
+                                        decoderThread.start()
                                     }
                                 }
                                 else{ snackbarHostState.value.showSnackbar("Cryption failed") }
-                                }
-                            }) {
-                            Text(text = "Crypt", fontSize = fontSize)
-                        }
+                            }
+                        }) {
+                        Text(text = "Crypt", fontSize = fontSize)
                     }
                 }
             }
