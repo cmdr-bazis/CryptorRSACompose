@@ -1,5 +1,6 @@
 package com.baz1s.cryptorrsacompose
 
+import java.math.BigInteger
 import kotlin.math.pow
 
 class BinaryConvert {

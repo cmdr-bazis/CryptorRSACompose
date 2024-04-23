@@ -1,34 +1,47 @@
 package com.baz1s.cryptorrsacompose
 
+import java.math.BigInteger
+
 class Encoder() : Cryptor() {
     override lateinit var PRS: RSAkeygen
     override var messageInitial = ArrayList<Char>()
     override var lettersDictionary = ArrayList<CoupleString>()
     override var convert = BinaryConvert()
-    override var messageConverted: String = ""
+    override lateinit var messageConverted: BigInteger
     override var messageCrypted: String = ""
     override var letterBinarySize: Int = 0
+    override lateinit var numN: BigInteger
+    override lateinit var numD: BigInteger
+    override var numE: Int = 0
+
 
     override fun convert(){
-        this.replaceLetters()
+        var messageConvertedTempString = ""
         for (i in 0..<messageInitial.size){
-            for (j in 0..<lettersDictionary.size){
-                if (messageInitial[i] == lettersDictionary[j]._letterChar){
-                    messageConverted += lettersDictionary[j]._binaryValue
-                    break
-                }
-            }
+            messageConvertedTempString += this.fillLeft(messageInitial[i].code.toString(), 3)
         }
+
+        messageConverted = messageConvertedTempString.toBigInteger()
     }
 
+
     override fun cryption() {
-        for (i in messageConverted.indices){
-            if (((PRS.getPRS()[i] == '0') and (messageConverted[i] == '1')) or ((PRS.getPRS()[i] == '1') and (messageConverted[i] == '0'))){
-                messageCrypted += '1'
-            }
-            else{
-                messageCrypted += '0'
-            }
+        var messageCryptedBigInt = BigInteger.valueOf(0)
+
+        messageCryptedBigInt = messageConverted.modPow(this.numE.toBigInteger(), this.numN)
+
+        messageCrypted = messageCryptedBigInt.toString()
+    }
+
+    override fun setMessage(message: String, keyString: String) {
+        for (i in 0..<message.length){
+            messageInitial.add(message[i])
         }
+
+        this.numN = keyString.split(" ")[0].toBigInteger()
+        this.numE = keyString.split(" ")[1].toInt()
+
+        this.convert()
+        this.cryption()
     }
 }

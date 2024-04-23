@@ -39,23 +39,17 @@ class RSAkeygen {
         var tempNextNumberBigIntString = ""
 
         for (i in 0..<range){
-            nextNumberBigInt = (nextNumberBigInt.pow(this.numE) % numN)
+            nextNumberBigInt = nextNumberBigInt.modPow(this.numE.toBigInteger(), this.numN)
 
             tempNextNumberBigIntString = nextNumberBigInt.toString()
 
-            if (tempNextNumberBigIntString[tempNextNumberBigIntString.length - 1].toInt() % 2 == 0){
-                stringOut += "0"
-            }
-            else{
-                stringOut += "1"
-            }
+            if (tempNextNumberBigIntString[tempNextNumberBigIntString.length - 1].toInt() % 2 == 0) stringOut += "0"
+            else stringOut += "1"
         }
         this.PRSFinalOut = stringOut
     }
 
-    public fun createKey(){
-
-    }
+    public fun createKey(range: Int) {}
 
     public fun getPRS(): String {
         return this.PRSFinalOut

@@ -64,11 +64,12 @@ dependencies {
 
       //For SDK 34--------------------------------------------------------------
 
-    implementation("androidx.compose.foundation:foundation-android:1.5.0")
-    implementation("androidx.compose.foundation:foundation-layout-android:1.0.0")
+    implementation(libs.androidx.foundation.android)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation(libs.androidx.activity.ktx)
-    implementation("androidx.core:core-ktx:1.8.0")
-    implementation("androidx.appcompat:appcompat:1.5.0")
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -76,6 +77,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
