@@ -1,39 +1,60 @@
 package com.baz1s.cryptorrsacompose
 
 import java.math.BigInteger
-import kotlin.math.abs
+import java.util.Random
 
 class RSAkeygen {
-    private var numP = 2735
-    private var numQ = 6235
+    private var numP = BigInteger.valueOf(0)
+    private var numQ = BigInteger.valueOf(0)
     private var numN = BigInteger.valueOf(0)
-    private var numE = 7
+    private var numEulerN = BigInteger.valueOf(0)
+    private var numD = BigInteger.valueOf(0)
+    private var numE = 65537
+    private var keySize = 0
     private var convert = BinaryConvert()
     private var PRSFinalOut: String = ""
     private var firstNumber = 12
     private var range = 1500
 
-    constructor(numP: Int, numQ: Int, numE: Int, firstNumber: Int, range: Int){
-        this.numP = numP
-        this.numQ = numQ
-        this.numE = numE
-        this.firstNumber = firstNumber
-        this.range = range
+//    constructor(numP: BigInteger, numQ: BigInteger, numE: Int, firstNumber: Int, range: Int){
+//        this.numP = numP
+//        this.numQ = numQ
+//        this.numE = numE
+//        this.firstNumber = firstNumber
+//        this.range = range
+//    }
+//
+//    constructor(numN: BigInteger, numE: Int, firstNumber: Int, range: Int){
+//        this.numN = numN
+//        this.numE = numE
+//        this.firstNumber = firstNumber
+//        this.range = range
+//    }
+//
+//    constructor(keySize: Int, numE: Int){
+//        this.numE = numE
+//        this.keySize = keySize
+//    }
+
+    public fun setParameters(keySize: String, numE: String){
+        this.keySize = keySize.toInt()
+        this.numE = numE.toInt()
     }
 
-    constructor(firstNumber: Int, range: Int){
-        this.firstNumber = firstNumber
-        this.range = range
+    public fun parametersCheck(keySize: String, numE: String): Boolean {
+        if (keySize == "" || numE == ""){
+            return false
+        }
+        if ((keySize.toInt() > 2049) or (keySize.toInt() < 30)){
+            return false
+        }
+        if ((numE.toInt() > 65538) or (numE.toInt() < 257)){
+            return false
+        }
+        return true
     }
 
-    constructor(numN: BigInteger, numE: Int, firstNumber: Int, range: Int){
-        this.numN = numN
-        this.numE = numE
-        this.firstNumber = firstNumber
-        this.range = range
-    }
-
-    public fun setPRS(){
+    public fun setGamma(){
         var nextNumberBigInt = BigInteger.valueOf(firstNumber.toLong())
         var stringOut = ""
         var tempNextNumberBigIntString = ""
@@ -49,10 +70,29 @@ class RSAkeygen {
         this.PRSFinalOut = stringOut
     }
 
-    public fun createKey(range: Int) {}
+    public fun createKeys() {
+        val randomSourceP = Random()
+        val randomSourceQ = Random()
+
+        this.numP = BigInteger(this.keySize, 10, randomSourceP)
+        this.numQ = BigInteger(this.keySize, 10, randomSourceQ)
+
+        this.numEulerN = (this.numP - BigInteger.valueOf(1)) * (this.numQ - BigInteger.valueOf(1))
+        this.numN = this.numP * this.numQ
+
+        this.numD = this.numE.toBigInteger().modInverse(this.numEulerN)
+    }
 
     public fun getPRS(): String {
         return this.PRSFinalOut
+    }
+
+    public fun getNumN(): String {
+        return this.numN.toString()
+    }
+
+    public fun getNumD(): String {
+        return this.numD.toString()
     }
 
     public fun checkPRS(){

@@ -74,6 +74,10 @@ class CryptorActivity : ComponentActivity() {
     private val elementPaddingValue = 2.dp
     private val fontSize = 5.em
     private val textFieldHeight = 150.dp
+
+    private var numE = ""
+    private var numD = ""
+    private var numN = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -96,9 +100,6 @@ class CryptorActivity : ComponentActivity() {
             NavDrawerItem.Keygen
         )
 
-        val selectedItem = remember { mutableStateOf(items[0]) }
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
         var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
 
         ModalNavigationDrawer(
@@ -132,29 +133,7 @@ class CryptorActivity : ComponentActivity() {
             },
             drawerState = drawerState
         ){
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(text = "Todo App")
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                                scope.launch {
-                                    drawerState.open()
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Menu,
-                                    contentDescription = "Menu"
-                                )
-                            }
-                        }
-                    )
-                }
-            ) {
-                ComposeNavigation(navController = navController)
-            }
+            ComposeNavigation(navController = navController)
         }
     }
 
@@ -207,12 +186,6 @@ class CryptorActivity : ComponentActivity() {
         val snackbarHostState = remember { mutableStateOf(SnackbarHostState()) }
 
         val loadingViewIsShown = remember { mutableStateOf(false) }
-        val keyGenIsShown = remember { mutableStateOf(false) }
-
-        val menuCoroutineScope = rememberCoroutineScope()
-        val menuItems = listOf("Cryptor", "KeyGen")
-        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-        val selectedMenuItems = remember { mutableStateOf(menuItems[0]) }
 
         var messageToCryptSave = ""
         var keySave = ""
@@ -226,7 +199,7 @@ class CryptorActivity : ComponentActivity() {
 
             Log.d("EncoderThread", "Started")
 
-            encoder.setMessage(messageToCryptSave, keySave)
+            encoder.setMessage(messageToCryptSave, this.numN + " " + this.numE)
             messageCryptedTextField.value = encoder.getFinalMessage()
             messageConverted.value = encoder.getConvertedMessage()
 
@@ -238,7 +211,7 @@ class CryptorActivity : ComponentActivity() {
 
             Log.d("DecoderThread", "Started")
 
-            decoder.setMessage(messageToCryptSave, keySave)
+            decoder.setMessage(messageToCryptSave, this.numN + " " + this.numD)
             messageCryptedTextField.value = decoder.getFinalMessage()
             messageConverted.value = decoder.getConvertedMessage()
 
@@ -260,7 +233,9 @@ class CryptorActivity : ComponentActivity() {
                 horizontalAlignment = Alignment.End
             )
             {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End){
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(45.dp), horizontalArrangement = Arrangement.End){
                     Row(verticalAlignment = Alignment.CenterVertically){
                         Box(modifier = Modifier.width(90.dp)) {
                             Text(text = switchText.value, fontSize = fontSize)
@@ -350,14 +325,7 @@ class CryptorActivity : ComponentActivity() {
                     placeholder = { Text(text = "Converted message here") }
                 )
                 Row(modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween) {
-                    Button(
-                        modifier = Modifier.height(50.dp),
-                        onClick = {
-
-                        }) {
-                        Text(text = "Auto Generate")
-                    }
+                    horizontalArrangement = Arrangement.End) {
                     Button(
                         modifier = Modifier.height(50.dp),
                         onClick = {
@@ -380,22 +348,37 @@ class CryptorActivity : ComponentActivity() {
     @Composable
     @Preview
     fun KeyGenScreen(){
-        val mainPaddingValue = 15.dp
-        val elementPaddingValue = 2.dp
-        val fontSize = 5.em
-        val textFieldHeight = 150.dp
+        val keySizeTextField = remember { mutableStateOf("") }
+        val numNTextField = remember { mutableStateOf("") }
+        val numDTextField = remember { mutableStateOf("") }
+        val numETextField = remember { mutableStateOf("") }
 
-        val keySizeTextField = remember { mutableStateOf(" ") }
-        val numNTextField = remember { mutableStateOf(" ") }
-        val numDTextField = remember { mutableStateOf(" ") }
-        val numETextField = remember { mutableStateOf(" ") }
+        val loadingViewIsShown = remember { mutableStateOf(false) }
+        val snackbarCoroutineScope = rememberCoroutineScope()
+        val snackbarHostState = remember { mutableStateOf(SnackbarHostState()) }
 
-        val menuCoroutineScope = rememberCoroutineScope()
-        val menuItems = listOf("Cryptor", "KeyGen")
-        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-        val selectedMenuItems = remember { mutableStateOf(menuItems[1]) }
+        var exponentSave = ""
+        var keySizeSave = ""
+        var isParametersFilled = false
 
-        val context = LocalContext.current
+
+        val keyGen = RSAkeygen()
+
+        val keyGenThread = Thread {
+            loadingViewIsShown.value = true
+
+            keyGen.setParameters(keySizeSave, exponentSave)
+            keyGen.createKeys()
+
+            numNTextField.value = keyGen.getNumN()
+            numDTextField.value = keyGen.getNumD()
+
+            this.numE = exponentSave
+            this.numN = keyGen.getNumN()
+            this.numD = keyGen.getNumD()
+
+            loadingViewIsShown.value = false
+        }
 
         Column(
             modifier = Modifier
@@ -403,7 +386,12 @@ class CryptorActivity : ComponentActivity() {
                 .background(color = Color.White)
                 .padding(mainPaddingValue)
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.height(45.dp)){
+                Text(text = "KeyGen", fontSize = fontSize)
+            }
+            Row(modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
                 Box(modifier = Modifier
                     .width(125.dp)
                     .padding(elementPaddingValue)) {
@@ -417,12 +405,73 @@ class CryptorActivity : ComponentActivity() {
                     .width(125.dp)
                     .padding(elementPaddingValue)) {
                     OutlinedTextField(
-                        value = numETextField.value,
-                        onValueChange = {newText -> numETextField.value = newText},
+                        value = keySizeTextField.value,
+                        onValueChange = {newText -> keySizeTextField.value = newText},
                         placeholder = { Text(text = "Size")},
                     )
                 }
+                Button(modifier = Modifier.height(50.dp),onClick = {
+                    snackbarCoroutineScope.launch {
+                        if (keyGen.parametersCheck(keySizeTextField.value, numETextField.value)){
+                            exponentSave = numETextField.value
+                            keySizeSave = keySizeTextField.value
+                            isParametersFilled = true
+                            snackbarHostState.value.showSnackbar("Saved")
+                        }
+                        else {
+                            isParametersFilled = false
+                            snackbarHostState.value.showSnackbar("Wrong parameters, try again")
+                        }
+                    }
+                }
+                ) {
+                    Text(text = "Save", fontSize = fontSize)
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            SnackbarHost(hostState = snackbarHostState.value)
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(elementPaddingValue)
+                    .height(200.dp),
+                value = numNTextField.value,
+                onValueChange = { newText -> numNTextField.value = newText },
+                placeholder = { Text(text = "Number N")}
+            )
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(elementPaddingValue)
+                    .height(200.dp),
+                value = numDTextField.value,
+                onValueChange = { newText -> numDTextField.value = newText },
+                placeholder = { Text(text = "Number D")}
+            )
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                Button(modifier = Modifier
+                    .height(50.dp)
+                    .padding(elementPaddingValue)
+                    .height(50.dp),
+                    onClick = {
+                        snackbarCoroutineScope.launch {
+                            if (isParametersFilled){
+                                keyGenThread.start()
+                            }
+                            else {
+                                snackbarHostState.value.showSnackbar("Generation failed")
+                            }
+                        }
+                }){
+                    Text(text = "Generate", fontSize = fontSize)
+                }
             }
         }
+        LoadingView(mutableState = loadingViewIsShown)
     }
 }

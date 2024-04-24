@@ -44,4 +44,8 @@ class Encoder() : Cryptor() {
         this.convert()
         this.cryption()
     }
+
+    override fun getConvertedMessage(): String {
+        return this.messageConverted.toString()
+    }
 }

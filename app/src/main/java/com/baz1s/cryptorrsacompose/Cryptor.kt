@@ -48,9 +48,7 @@ abstract class Cryptor {
         return this.messageCrypted
     }
 
-    public fun getConvertedMessage(): String {
-        return this.messageConverted.toString()
-    }
+    public open abstract fun getConvertedMessage(): String
 
     public fun getGamma(): String {
         return this.PRS.getPRS()
