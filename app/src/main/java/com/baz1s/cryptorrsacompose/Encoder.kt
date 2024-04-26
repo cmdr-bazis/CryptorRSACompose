@@ -13,6 +13,7 @@ class Encoder() : Cryptor() {
     override lateinit var numN: BigInteger
     override lateinit var numD: BigInteger
     override var numE: Int = 0
+    override var messageCryptedAndConverted = ""
 
 
     override fun convert(){
@@ -33,6 +34,18 @@ class Encoder() : Cryptor() {
         messageCrypted = messageCryptedBigInt.toString()
     }
 
+    override fun convertCrypted() {
+        var tempASCIIString = ""
+        for (i in 0..<messageCrypted.length){
+            tempASCIIString += messageCrypted[i]
+
+            if (tempASCIIString.length == 3){
+                this.messageCryptedAndConverted += tempASCIIString.getCharFromASCIIString()
+                tempASCIIString = ""
+            }
+        }
+    }
+
     override fun setMessage(message: String, keyString: String) {
         for (i in 0..<message.length){
             messageInitial.add(message[i])
@@ -43,9 +56,18 @@ class Encoder() : Cryptor() {
 
         this.convert()
         this.cryption()
+//        this.convertCrypted()
     }
 
     override fun getConvertedMessage(): String {
         return this.messageConverted.toString()
+    }
+
+    override fun getFinalMessage(): String {
+        return this.messageCrypted
+    }
+
+    override fun getCryptedMessage(): String {
+        return this.messageCrypted.toString()
     }
 }

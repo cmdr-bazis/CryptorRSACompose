@@ -12,6 +12,7 @@ abstract class Cryptor {
     protected abstract var messageConverted: BigInteger //Message converted to binary state
     protected abstract var messageCrypted: String //Final message
     protected abstract var letterBinarySize: Int //Max size of binary value of letter in alphabet, used for dictionary filling
+    protected abstract var messageCryptedAndConverted: String
     protected abstract var numN: BigInteger
     protected abstract var numD: BigInteger
     protected abstract var numE: Int
@@ -42,13 +43,19 @@ abstract class Cryptor {
     protected abstract fun convert()
     protected abstract fun cryption()
 
+    protected abstract fun convertCrypted()
+
     public abstract fun setMessage(message: String, keyString: String)
 
-    public open fun getFinalMessage(): String {
-        return this.messageCrypted
-    }
+    public abstract fun getFinalMessage(): String
 
-    public open abstract fun getConvertedMessage(): String
+    public abstract fun getConvertedMessage(): String
+
+    public abstract fun getCryptedMessage(): String
+
+    protected fun String.getCharFromASCIIString(): Char {
+        return (this[0].digitToInt() * 100 + this[1].digitToInt() * 10 + this[2].digitToInt()).toChar()
+    }
 
     public fun getGamma(): String {
         return this.PRS.getPRS()

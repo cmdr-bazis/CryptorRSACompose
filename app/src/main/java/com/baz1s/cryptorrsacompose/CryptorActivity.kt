@@ -1,6 +1,7 @@
 package com.baz1s.cryptorrsacompose
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -33,11 +34,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import kotlinx.coroutines.launch
 import android.util.Log
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.BottomSheetScaffoldState
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -45,6 +52,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
@@ -54,11 +62,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -66,6 +80,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.baz1s.cryptorrsacompose.ui.theme.CryptorRSAComposeTheme
 import kotlinx.coroutines.CoroutineScope
 
 class CryptorActivity : ComponentActivity() {
@@ -75,10 +90,16 @@ class CryptorActivity : ComponentActivity() {
     private val fontSize = 5.em
     private val textFieldHeight = 150.dp
 
+    private val isDarkTheme = false
+    private val insetPadding = 20.dp
+
     private var numE = ""
     private var numD = ""
     private var numN = ""
+
+    private var isKeyGenUsed = false
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent{
@@ -87,7 +108,10 @@ class CryptorActivity : ComponentActivity() {
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
-    @Preview
+    @Preview(
+        uiMode = Configuration.UI_MODE_NIGHT_YES,
+        name = "CryptorPreviewLight"
+    )
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun MainLayOut(){
@@ -100,7 +124,7 @@ class CryptorActivity : ComponentActivity() {
             NavDrawerItem.Keygen
         )
 
-        var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
+        var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
 
         ModalNavigationDrawer(
             drawerContent = {
@@ -108,7 +132,7 @@ class CryptorActivity : ComponentActivity() {
                     Spacer(modifier = Modifier.height(16.dp))
                     items.forEachIndexed { index, item ->
                         NavigationDrawerItem(
-                            label = { Text(text = item.title)},
+                            label = { Text(text = item.title, fontSize = fontSize)},
                             selected = index == selectedItemIndex,
                             onClick = {
                                 selectedItemIndex = index
@@ -149,12 +173,13 @@ class CryptorActivity : ComponentActivity() {
         }
     }
 
+
     @Composable
     fun LoadingView(mutableState: MutableState<Boolean>) {
         if (mutableState.value) {
             Column(modifier = Modifier
                 .fillMaxSize()
-                .background(Color.DarkGray.copy(0.5f))
+                .background(Color.LightGray.copy(alpha = 0.5f))
             ){
                 Spacer(modifier = Modifier.weight(1f))
                 Row(modifier = Modifier
@@ -168,19 +193,21 @@ class CryptorActivity : ComponentActivity() {
         }
     }
 
+
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Preview
     @Composable
     fun CryptorScreen() {
         val messageConverted = remember { mutableStateOf("") }
-        val pathToMessage = remember { mutableStateOf("") }
 
         val keyTextField = remember { mutableStateOf("") }
         val messageToCryptTextField = remember { mutableStateOf("") }
         val messageCryptedTextField = remember { mutableStateOf("") }
         val isEncoderSwitch = remember { mutableStateOf(true) }
         val switchText = remember { mutableStateOf("Encoder") }
+        val messageCryptedConverted = remember { mutableStateOf("") }
+        val checkBoxState = remember { mutableStateOf(false) }
 
         val snackbarCoroutineScope = rememberCoroutineScope()
         val snackbarHostState = remember { mutableStateOf(SnackbarHostState()) }
@@ -199,9 +226,13 @@ class CryptorActivity : ComponentActivity() {
 
             Log.d("EncoderThread", "Started")
 
-            encoder.setMessage(messageToCryptSave, this.numN + " " + this.numE)
+            if (isKeyGenUsed and checkBoxState.value) encoder.setMessage(messageToCryptTextField.value, this.numN + " " + this.numE)
+            else encoder.setMessage(messageToCryptSave, keySave)
+
             messageCryptedTextField.value = encoder.getFinalMessage()
             messageConverted.value = encoder.getConvertedMessage()
+
+            Log.d("EncoderCrypted", encoder.getCryptedMessage())
 
             loadingViewIsShown.value = false
         }
@@ -211,23 +242,28 @@ class CryptorActivity : ComponentActivity() {
 
             Log.d("DecoderThread", "Started")
 
-            decoder.setMessage(messageToCryptSave, this.numN + " " + this.numD)
+            if (isKeyGenUsed and checkBoxState.value) decoder.setMessage(messageToCryptTextField.value, this.numN + " " + this.numD)
+            else decoder.setMessage(messageToCryptSave, keySave)
+
             messageCryptedTextField.value = decoder.getFinalMessage()
             messageConverted.value = decoder.getConvertedMessage()
+
+            Log.d("DecoderCrypted", decoder.getCryptedMessage())
 
             loadingViewIsShown.value = false
         }
 
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = Color.White)
+                .background(if (isDarkTheme) Color.DarkGray else Color.White)
         )
         {
+            Spacer(modifier = Modifier.height(insetPadding))
             Column(
                 modifier = Modifier
                     .padding(mainPaddingValue)
-                    .background(color = Color.White)
                     .fillMaxSize()
                     .weight(1f),
                 horizontalAlignment = Alignment.End
@@ -238,7 +274,7 @@ class CryptorActivity : ComponentActivity() {
                     .height(45.dp), horizontalArrangement = Arrangement.End){
                     Row(verticalAlignment = Alignment.CenterVertically){
                         Box(modifier = Modifier.width(90.dp)) {
-                            Text(text = switchText.value, fontSize = fontSize)
+                            Text(text = switchText.value, fontSize = fontSize, color = if (isDarkTheme) Color.LightGray else Color.Black)
                         }
                         Switch(checked = isEncoderSwitch.value, onCheckedChange = {
                             isEncoderSwitch.value = it
@@ -278,6 +314,13 @@ class CryptorActivity : ComponentActivity() {
                             placeholder = { Text(text = "Key")},
                         )
                     }
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Checkbox(
+                            checked = checkBoxState.value,
+                            onCheckedChange = {checkBoxState.value = it}
+                        )
+                        Text(text = if (checkBoxState.value) "Generated keys" else "Use keys here")
+                    }
                     Button(
                         modifier = Modifier.height(50.dp),
                         onClick = {
@@ -293,7 +336,9 @@ class CryptorActivity : ComponentActivity() {
                                     isParametersFilled = true
                                 }
                             }
-                        })
+                        },
+                        enabled = !checkBoxState.value,
+                        colors = if (checkBoxState.value) ButtonDefaults.buttonColors(containerColor = Color.DarkGray) else ButtonDefaults.buttonColors())
                     {
                         Text(text = "Save", fontSize = fontSize)
                     }
@@ -330,16 +375,17 @@ class CryptorActivity : ComponentActivity() {
                         modifier = Modifier.height(50.dp),
                         onClick = {
                             snackbarCoroutineScope.launch {
-                                if (isParametersFilled){
+                                if (isParametersFilled or isKeyGenUsed){
                                     if (isEncoderSwitch.value) { encoderThread.start() }
                                     else { decoderThread.start() }
                                 }
                                 else{ snackbarHostState.value.showSnackbar("Cryption failed") }
                             }
                         }) {
-                        Text(text = "Crypt", fontSize = fontSize)
+                        Text(text = if (isEncoderSwitch.value) "Encode" else "Decode", fontSize = fontSize)
                     }
                 }
+                Spacer(modifier = Modifier.height(insetPadding))
             }
         }
         LoadingView(mutableState = loadingViewIsShown)
@@ -377,99 +423,122 @@ class CryptorActivity : ComponentActivity() {
             this.numN = keyGen.getNumN()
             this.numD = keyGen.getNumD()
 
+            this.isKeyGenUsed = true
+
             loadingViewIsShown.value = false
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = Color.White)
-                .padding(mainPaddingValue)
+                .background(if (isDarkTheme) Color.DarkGray else Color.White)
         ) {
-            Row(modifier = Modifier.height(45.dp)){
-                Text(text = "KeyGen", fontSize = fontSize)
-            }
-            Row(modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                Box(modifier = Modifier
-                    .width(125.dp)
-                    .padding(elementPaddingValue)) {
-                    OutlinedTextField(
-                        value = numETextField.value,
-                        onValueChange = {newText -> numETextField.value = newText},
-                        placeholder = { Text(text = "Exponent")},
+            Spacer(modifier = Modifier.height(insetPadding))
+            Column(
+                modifier = Modifier
+                    .padding(mainPaddingValue)
+            ) {
+                Row(modifier = Modifier.height(45.dp)) {
+                    Text(
+                        text = "KeyGen",
+                        fontSize = fontSize,
+                        color = if (isDarkTheme) Color.LightGray else Color.Black
                     )
                 }
-                Box(modifier = Modifier
-                    .width(125.dp)
-                    .padding(elementPaddingValue)) {
-                    OutlinedTextField(
-                        value = keySizeTextField.value,
-                        onValueChange = {newText -> keySizeTextField.value = newText},
-                        placeholder = { Text(text = "Size")},
-                    )
-                }
-                Button(modifier = Modifier.height(50.dp),onClick = {
-                    snackbarCoroutineScope.launch {
-                        if (keyGen.parametersCheck(keySizeTextField.value, numETextField.value)){
-                            exponentSave = numETextField.value
-                            keySizeSave = keySizeTextField.value
-                            isParametersFilled = true
-                            snackbarHostState.value.showSnackbar("Saved")
-                        }
-                        else {
-                            isParametersFilled = false
-                            snackbarHostState.value.showSnackbar("Wrong parameters, try again")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(125.dp)
+                            .padding(elementPaddingValue)
+                    ) {
+                        OutlinedTextField(
+                            value = numETextField.value,
+                            onValueChange = { newText -> numETextField.value = newText },
+                            placeholder = { Text(text = "Exponent") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(125.dp)
+                            .padding(elementPaddingValue)
+                    ) {
+                        OutlinedTextField(
+                            value = keySizeTextField.value,
+                            onValueChange = { newText -> keySizeTextField.value = newText },
+                            placeholder = { Text(text = "Size") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
+                    Button(modifier = Modifier.height(50.dp), onClick = {
+                        snackbarCoroutineScope.launch {
+                            if (keyGen.parametersCheck(
+                                    keySizeTextField.value,
+                                    numETextField.value
+                                )
+                            ) {
+                                exponentSave = numETextField.value
+                                keySizeSave = keySizeTextField.value
+                                isParametersFilled = true
+                                snackbarHostState.value.showSnackbar("Saved")
+                            } else {
+                                isParametersFilled = false
+                                snackbarHostState.value.showSnackbar("Wrong parameters, try again")
+                            }
                         }
                     }
+                    ) {
+                        Text(text = "Save", fontSize = fontSize)
+                    }
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                SnackbarHost(hostState = snackbarHostState.value)
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(elementPaddingValue)
+                        .height(200.dp),
+                    value = numNTextField.value,
+                    onValueChange = { newText -> numNTextField.value = newText },
+                    placeholder = { Text(text = "Number N") }
+                )
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(elementPaddingValue)
+                        .height(200.dp),
+                    value = numDTextField.value,
+                    onValueChange = { newText -> numDTextField.value = newText },
+                    placeholder = { Text(text = "Number D") }
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(70.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Save", fontSize = fontSize)
-                }
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            SnackbarHost(hostState = snackbarHostState.value)
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(elementPaddingValue)
-                    .height(200.dp),
-                value = numNTextField.value,
-                onValueChange = { newText -> numNTextField.value = newText },
-                placeholder = { Text(text = "Number N")}
-            )
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(elementPaddingValue)
-                    .height(200.dp),
-                value = numDTextField.value,
-                onValueChange = { newText -> numDTextField.value = newText },
-                placeholder = { Text(text = "Number D")}
-            )
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                Button(modifier = Modifier
-                    .height(50.dp)
-                    .padding(elementPaddingValue)
-                    .height(50.dp),
-                    onClick = {
-                        snackbarCoroutineScope.launch {
-                            if (isParametersFilled){
-                                keyGenThread.start()
+                    Button(modifier = Modifier
+                        .height(50.dp)
+                        .padding(elementPaddingValue)
+                        .height(50.dp),
+                        onClick = {
+                            snackbarCoroutineScope.launch {
+                                if (isParametersFilled) {
+                                    keyGenThread.start()
+                                } else {
+                                    snackbarHostState.value.showSnackbar("Generation failed")
+                                }
                             }
-                            else {
-                                snackbarHostState.value.showSnackbar("Generation failed")
-                            }
-                        }
-                }){
-                    Text(text = "Generate", fontSize = fontSize)
+                        }) {
+                        Text(text = "Generate", fontSize = fontSize)
+                    }
                 }
+                Spacer(modifier = Modifier.height(insetPadding))
             }
         }
         LoadingView(mutableState = loadingViewIsShown)

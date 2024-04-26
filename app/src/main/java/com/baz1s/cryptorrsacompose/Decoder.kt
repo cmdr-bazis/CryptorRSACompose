@@ -16,6 +16,7 @@ class Decoder : Cryptor() {
     override var numN = BigInteger.valueOf(0)
     override var numD = BigInteger.valueOf(0)
     override var numE: Int = 0
+    override var messageCryptedAndConverted = ""
 
 
 
@@ -31,22 +32,30 @@ class Decoder : Cryptor() {
             tempACIIString += messageConvertedString[i]
 
             if (tempACIIString.length == 3){
-                this.messageConvertedDecoder += tempACIIString.getCharFromASCIIThree()
+                this.messageConvertedDecoder += tempACIIString.getCharFromASCIIString()
                 tempACIIString = ""
             }
         }
     }
 
-    private fun String.getCharFromASCIIThree(): Char {
-        return (this[0].digitToInt() * 100 + this[1].digitToInt() * 10 + this[2].digitToInt()).toChar()
+    override fun convertCrypted() {
+        var messageConvertedTempString = ""
+        for (i in 0..<messageCryptedAndConverted.length){
+            messageConvertedTempString += this.fillLeft(messageCryptedAndConverted[i].code.toString(), 3)
+        }
+
+        messageInitialDecoder = messageConvertedTempString.toBigInteger()
     }
 
+
+
     override fun setMessage(message: String, keyString: String) {
-        this.messageInitialDecoder = message.toBigInteger()
+        this.messageInitialDecoder= message.toBigInteger()
 
         this.numN = keyString.split(" ")[0].toBigInteger()
         this.numD = keyString.split(" ")[1].toBigInteger()
 
+//        this.convertCrypted()
         this.cryption()
         this.convert()
     }
@@ -56,6 +65,10 @@ class Decoder : Cryptor() {
     }
 
     override fun getConvertedMessage(): String {
-        return this.messageCryptedDecoder.toString()
+        return this.messageInitialDecoder.toString()
+    }
+
+    override fun getCryptedMessage(): String {
+        return this.messageInitialDecoder.toString()
     }
 }
