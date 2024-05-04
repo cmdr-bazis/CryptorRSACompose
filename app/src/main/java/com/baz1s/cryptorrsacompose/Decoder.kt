@@ -4,18 +4,13 @@ import java.math.BigInteger
 
 class Decoder : Cryptor() {
     override lateinit var PRS: RSAkeygen
-    override var messageInitial = ArrayList<Char>()
-    private var messageInitialDecoder = BigInteger.valueOf(0)
-    override var lettersDictionary = ArrayList<CoupleString>()
     override var convert = BinaryConvert()
-    override var messageConverted: BigInteger = BigInteger.valueOf(0)
-    private var messageConvertedDecoder = ""
-    override var messageCrypted: String = ""
-    private var messageCryptedDecoder: BigInteger = BigInteger.valueOf(0)
-    override var letterBinarySize: Int = 0
-    override var numN = BigInteger.valueOf(0)
-    override var numD = BigInteger.valueOf(0)
-    override var numE: Int = 0
+    private lateinit var messageInitialDecoder: BigInteger
+    private var messageConvertedDecoder: String = ""
+    private lateinit var messageCryptedDecoder: BigInteger
+    override lateinit var numN: BigInteger
+    override lateinit var numD: BigInteger
+    override lateinit var numE: BigInteger
     override var messageCryptedAndConverted = ""
 
 
@@ -25,13 +20,13 @@ class Decoder : Cryptor() {
     }
 
     override fun convert() {
-        val messageConvertedString = this.messageCryptedDecoder.toString()
+        val messageCryptedString = this.messageCryptedDecoder.toString().substring(1, this.messageCryptedDecoder.toString().length)
         var tempACIIString = ""
 
-        for (i in 0..<messageConvertedString.length){
-            tempACIIString += messageConvertedString[i]
+        for (i in 0..<messageCryptedString.length){
+            tempACIIString += messageCryptedString[i]
 
-            if (tempACIIString.length == 3){
+            if (tempACIIString.length == 4){
                 this.messageConvertedDecoder += tempACIIString.getCharFromASCIIString()
                 tempACIIString = ""
             }
@@ -41,7 +36,7 @@ class Decoder : Cryptor() {
     override fun convertCrypted() {
         var messageConvertedTempString = ""
         for (i in 0..<messageCryptedAndConverted.length){
-            messageConvertedTempString += this.fillLeft(messageCryptedAndConverted[i].code.toString(), 3)
+            messageConvertedTempString += this.fillLeft(messageCryptedAndConverted[i].code.toString(), 4)
         }
 
         messageInitialDecoder = messageConvertedTempString.toBigInteger()
@@ -65,7 +60,7 @@ class Decoder : Cryptor() {
     }
 
     override fun getConvertedMessage(): String {
-        return this.messageInitialDecoder.toString()
+        return this.messageCryptedDecoder.toString()
     }
 
     override fun getCryptedMessage(): String {

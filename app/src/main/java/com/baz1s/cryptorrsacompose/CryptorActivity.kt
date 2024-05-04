@@ -35,53 +35,28 @@ import androidx.compose.ui.unit.em
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.BottomSheetScaffoldState
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.baz1s.cryptorrsacompose.ui.theme.CryptorRSAComposeTheme
-import kotlinx.coroutines.CoroutineScope
 
 class CryptorActivity : ComponentActivity() {
 
@@ -121,7 +96,8 @@ class CryptorActivity : ComponentActivity() {
 
         val items = listOf(
             NavDrawerItem.Cryptor,
-            NavDrawerItem.Keygen
+            NavDrawerItem.Keygen,
+            NavDrawerItem.Signature
         )
 
         var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -169,6 +145,9 @@ class CryptorActivity : ComponentActivity() {
             }
             composable(NavDrawerItem.Keygen.route){
                 KeyGenScreen()
+            }
+            composable(NavDrawerItem.Signature.route){
+                SignatureScreen()
             }
         }
     }
@@ -524,8 +503,7 @@ class CryptorActivity : ComponentActivity() {
                 ) {
                     Button(modifier = Modifier
                         .height(50.dp)
-                        .padding(elementPaddingValue)
-                        .height(50.dp),
+                        .padding(elementPaddingValue),
                         onClick = {
                             snackbarCoroutineScope.launch {
                                 if (isParametersFilled) {
@@ -542,5 +520,157 @@ class CryptorActivity : ComponentActivity() {
             }
         }
         LoadingView(mutableState = loadingViewIsShown)
+    }
+
+    @Preview
+    @Composable
+    fun SignatureScreen(){
+        val messageToSignTextField = remember { mutableStateOf("") }
+        val keyTextField = remember { mutableStateOf("") }
+        val messageSignedTextField = remember { mutableStateOf("") }
+        val isToSignSwitch = remember { mutableStateOf(true) }
+        val switchText = remember { mutableStateOf("Sign") }
+        val checkBoxState = remember { mutableStateOf(false) }
+        val loadingViewIsShown = remember { mutableStateOf(false) }
+
+        val snackbarCoroutineScope = rememberCoroutineScope()
+        val snackbarHostState = remember { mutableStateOf(SnackbarHostState()) }
+
+        var isParametersFilled = false
+        var keySave = ""
+        var messageToSignSave = ""
+
+        var encoder = Encoder()
+        var decoder = Decoder()
+
+
+        val signThread = Thread {
+            loadingViewIsShown.value = true
+
+            if (isKeyGenUsed and checkBoxState.value) encoder.setMessage(messageToSignTextField.value, this.numN + " " + this.numD)
+            else encoder.setMessage(messageToSignSave, keySave)
+
+            messageSignedTextField.value = encoder.getFinalMessage()
+
+            loadingViewIsShown.value = false
+        }
+
+        val checkSignThread = Thread {
+            loadingViewIsShown.value = true
+
+            if (isKeyGenUsed and checkBoxState.value) decoder.setMessage(messageToSignTextField.value, this.numN + " " + this.numE)
+            else encoder.setMessage(messageToSignSave, keySave)
+
+            messageSignedTextField.value = decoder.getFinalMessage()
+
+            loadingViewIsShown.value = false
+        }
+
+
+
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+        ) {
+            Column(modifier = Modifier.padding(mainPaddingValue)) {
+                Spacer(modifier = Modifier.height(insetPadding))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically){
+                    Box(modifier = Modifier.padding(elementPaddingValue)) {
+                        Text(text = switchText.value, fontSize = fontSize)
+                    }
+                    Switch(checked = isToSignSwitch.value, onCheckedChange = {
+                        isToSignSwitch.value = it
+                        if (isToSignSwitch.value) switchText.value = "Sign"
+                        else switchText.value  = "Check Sign"
+                    })
+                }
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(elementPaddingValue)
+                        .height(150.dp),
+                    value = messageToSignTextField.value,
+                    onValueChange = { newText -> messageToSignTextField.value = newText },
+                    placeholder = { Text(text = "Write your message here") }
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                SnackbarHost(hostState = snackbarHostState.value)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(elementPaddingValue),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                )
+                {
+                    Box(
+                        modifier = Modifier
+                            .width(150.dp)
+                            .padding(elementPaddingValue)
+                    ) {
+                        OutlinedTextField(
+                            value = keyTextField.value,
+                            onValueChange = { newText -> keyTextField.value = newText },
+                            placeholder = { Text(text = "Key") },
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Checkbox(
+                            checked = checkBoxState.value,
+                            onCheckedChange = { checkBoxState.value = it }
+                        )
+                        Text(text = if (checkBoxState.value) "Generated keys" else "Use keys here")
+                    }
+                    Button(
+                        modifier = Modifier.height(50.dp),
+                        onClick = {
+                            snackbarCoroutineScope.launch {
+                                if (!encoder.keyCheck(keyTextField.value)) {
+                                    snackbarHostState.value.showSnackbar("Wrong key type, try again")
+                                    isParametersFilled = false
+                                } else {
+                                    snackbarHostState.value.showSnackbar("Saved")
+                                    keySave = keyTextField.value
+                                    messageToSignSave = messageToSignTextField.value
+                                    isParametersFilled = true
+                                }
+                            }
+                        },
+                        enabled = !checkBoxState.value,
+                        colors = if (checkBoxState.value) ButtonDefaults.buttonColors(containerColor = Color.DarkGray) else ButtonDefaults.buttonColors()
+                    )
+                    {
+                        Text(text = "Save", fontSize = fontSize)
+                    }
+                }
+                OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(elementPaddingValue)
+                        .height(200.dp),
+                    value = messageSignedTextField.value,
+                    onValueChange = { newText -> messageSignedTextField.value = newText },
+                    placeholder = { Text(text = "Signed message here") }
+                )
+                Row(modifier = Modifier
+                    .padding(elementPaddingValue)
+                    .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(onClick = {
+                        snackbarCoroutineScope.launch {
+                            if (isParametersFilled or isKeyGenUsed){
+                                if (isToSignSwitch.value) { signThread.start() }
+                                else { checkSignThread.start() }
+                            }
+                            else{ snackbarHostState.value.showSnackbar("Sign failed") }
+                        }
+                    }) {
+                        Text(text = if (isToSignSwitch.value) "Sign" else "Check sign", fontSize = fontSize)
+                    }
+                }
+            }
+        }
     }
 }

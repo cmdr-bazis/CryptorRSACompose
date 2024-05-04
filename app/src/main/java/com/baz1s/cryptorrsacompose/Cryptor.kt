@@ -6,16 +6,11 @@ import java.math.BigInteger
 
 abstract class Cryptor {
     protected abstract var PRS: RSAkeygen
-    protected abstract var messageInitial: ArrayList<Char> //Original message
-    protected abstract var lettersDictionary: ArrayList<CoupleString>
     protected abstract var convert: BinaryConvert
-    protected abstract var messageConverted: BigInteger //Message converted to binary state
-    protected abstract var messageCrypted: String //Final message
-    protected abstract var letterBinarySize: Int //Max size of binary value of letter in alphabet, used for dictionary filling
-    protected abstract var messageCryptedAndConverted: String
     protected abstract var numN: BigInteger
     protected abstract var numD: BigInteger
-    protected abstract var numE: Int
+    protected abstract var numE: BigInteger
+    protected abstract var messageCryptedAndConverted: String
 
 
     protected fun fillLeft(string: String, number: Int): String {
@@ -27,18 +22,6 @@ abstract class Cryptor {
         return stringOut
     }
 
-    protected fun inputMessage(path: String){
-        var lines = Files.readAllLines(Paths.get(path))
-        var tempMessage = ""
-
-        for (i in 0..<lines.size){
-            tempMessage += lines[i]
-        }
-
-        for (i in 0..<tempMessage.length){
-            messageInitial.add(tempMessage[i])
-        }
-    }
 
     protected abstract fun convert()
     protected abstract fun cryption()
@@ -54,7 +37,14 @@ abstract class Cryptor {
     public abstract fun getCryptedMessage(): String
 
     protected fun String.getCharFromASCIIString(): Char {
-        return (this[0].digitToInt() * 100 + this[1].digitToInt() * 10 + this[2].digitToInt()).toChar()
+        var intOut = 0
+        var tempMultiply = "1"
+        for (i in 0..<this.length){
+            intOut += this[this.length - i - 1].digitToInt() * tempMultiply.toInt()
+            tempMultiply += "0"
+        }
+        return intOut.toChar()
+//        return (this[0].digitToInt() * 1000 + this[1].digitToInt() * 100 + this[2].digitToInt() * 10 + this[3].digitToInt()).toChar()
     }
 
     public fun getGamma(): String {

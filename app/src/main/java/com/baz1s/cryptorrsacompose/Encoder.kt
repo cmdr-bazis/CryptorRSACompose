@@ -4,32 +4,30 @@ import java.math.BigInteger
 
 class Encoder() : Cryptor() {
     override lateinit var PRS: RSAkeygen
-    override var messageInitial = ArrayList<Char>()
-    override var lettersDictionary = ArrayList<CoupleString>()
+    var messageInitial = ArrayList<Char>()
     override var convert = BinaryConvert()
-    override lateinit var messageConverted: BigInteger
-    override var messageCrypted: String = ""
-    override var letterBinarySize: Int = 0
+    private lateinit var messageConverted: BigInteger
+    private lateinit var messageCrypted: String
     override lateinit var numN: BigInteger
     override lateinit var numD: BigInteger
-    override var numE: Int = 0
-    override var messageCryptedAndConverted = ""
+    override  lateinit var numE: BigInteger
+    override lateinit var messageCryptedAndConverted: String
 
 
     override fun convert(){
         var messageConvertedTempString = ""
         for (i in 0..<messageInitial.size){
-            messageConvertedTempString += this.fillLeft(messageInitial[i].code.toString(), 3)
+            messageConvertedTempString += this.fillLeft(messageInitial[i].code.toString(), 4)
         }
 
-        messageConverted = messageConvertedTempString.toBigInteger()
+        messageConverted =  ("1$messageConvertedTempString").toBigInteger()
     }
 
 
     override fun cryption() {
         var messageCryptedBigInt = BigInteger.valueOf(0)
 
-        messageCryptedBigInt = messageConverted.modPow(this.numE.toBigInteger(), this.numN)
+        messageCryptedBigInt = messageConverted.modPow(this.numE, this.numN)
 
         messageCrypted = messageCryptedBigInt.toString()
     }
@@ -52,7 +50,7 @@ class Encoder() : Cryptor() {
         }
 
         this.numN = keyString.split(" ")[0].toBigInteger()
-        this.numE = keyString.split(" ")[1].toInt()
+        this.numE = keyString.split(" ")[1].toBigInteger()
 
         this.convert()
         this.cryption()
